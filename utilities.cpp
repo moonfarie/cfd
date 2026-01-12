@@ -1,5 +1,6 @@
 #include "utilities.hpp"
 
+#include <cstddef>
 #include <fstream>
 #include <stdexcept>
 

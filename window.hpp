@@ -1,8 +1,9 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
-
 #include <string>
+
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 namespace cfd {
 
@@ -16,6 +17,8 @@ class Window {
 
   bool should_close() const;
   void poll_events() const;
+
+  void create_surface(VkInstance instance, VkSurfaceKHR* surface) const;
 
  private:
   void init();

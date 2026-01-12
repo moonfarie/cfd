@@ -25,6 +25,12 @@ bool Window::should_close() const {
 
 void Window::poll_events() const { glfwPollEvents(); }
 
+void Window::create_surface(VkInstance instance, VkSurfaceKHR* surface) const {
+  if (glfwCreateWindowSurface(instance, window_, nullptr, surface) != VK_SUCCESS) {
+    throw std::runtime_error("Failed to create GLFW window surface");
+  }
+}
+
 void Window::init() {
   if (glfwInit() == GLFW_FALSE) {
     throw std::runtime_error("Failed to initialize the GLFW library");

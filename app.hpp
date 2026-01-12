@@ -1,5 +1,6 @@
 #pragma once
 
+#include "device.hpp"
 #include "pipeline.hpp"
 #include "window.hpp"
 
@@ -14,7 +15,8 @@ class App {
 
  private:
   Window window_;
-  render::Pipeline pipeline{"shaders/shader.vert.spv", "shaders/shader.frag.spv"};
+  render::Device device_{window_};
+  render::Pipeline pipeline{device_, "shaders/shader.vert.spv", "shaders/shader.frag.spv"};
 };
 
 }  // namespace cfd
