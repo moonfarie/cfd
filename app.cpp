@@ -2,7 +2,8 @@
 
 namespace cfd {
 
-App::App(int width, int height, const std::string& title) : window_(width, height, title) {}
+App::App(uint32_t width, uint32_t height, const std::string& title)
+    : width_(width), height_(height), window_(width_, height_, title) {}
 
 void App::run() const {
   while (not window_.should_close()) {
