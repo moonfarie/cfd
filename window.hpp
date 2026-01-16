@@ -20,6 +20,8 @@ class Window {
 
   void create_surface(VkInstance instance, VkSurfaceKHR* surface) const;
 
+  VkExtent2D extent() const;
+
  private:
   void init();
 

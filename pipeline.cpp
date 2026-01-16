@@ -9,11 +9,11 @@ namespace engine {
 
 namespace render {
 
-Pipeline::Pipeline(uint32_t width, uint32_t height, Device& device,
+Pipeline::Pipeline(Device& device, const VkPipelineStateCreateInfo& pipeline_cfg,
                    const std::filesystem::path& vertex_shader_path,
                    const std::filesystem::path& fragment_shader_path)
     : device_(device) {
-  create_pipeline(width, height, vertex_shader_path, fragment_shader_path);
+  create_pipeline(pipeline_cfg, vertex_shader_path, fragment_shader_path);
 }
 
 Pipeline::~Pipeline() {
@@ -22,11 +22,9 @@ Pipeline::~Pipeline() {
   vkDestroyPipeline(device_.handle(), pipeline_, nullptr);
 }
 
-void Pipeline::create_pipeline(uint32_t width, uint32_t height,
+void Pipeline::create_pipeline(const VkPipelineStateCreateInfo& pipeline_cfg,
                                const std::filesystem::path& vertex_shader_path,
                                const std::filesystem::path& fragment_shader_path) {
-  init_default_config(width, height);
-
   const auto vertex_shader_code = utilities::read_file_as_char_vec(vertex_shader_path);
   const auto fragment_shader_code = utilities::read_file_as_char_vec(fragment_shader_path);
 
@@ -66,9 +64,9 @@ void Pipeline::create_pipeline(uint32_t width, uint32_t height,
 
   viewport_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
   viewport_state_create_info.viewportCount = 1;
-  viewport_state_create_info.pViewports = &pipeline_state_create_info_.viewport;
+  viewport_state_create_info.pViewports = &pipeline_cfg.viewport;
   viewport_state_create_info.scissorCount = 1;
-  viewport_state_create_info.pScissors = &pipeline_state_create_info_.scissor;
+  viewport_state_create_info.pScissors = &pipeline_cfg.scissor;
 
   // Color Blend
   VkPipelineColorBlendStateCreateInfo color_blend_state_create_info{};
@@ -77,7 +75,7 @@ void Pipeline::create_pipeline(uint32_t width, uint32_t height,
   color_blend_state_create_info.logicOpEnable = VK_FALSE;
   color_blend_state_create_info.logicOp = VK_LOGIC_OP_COPY;
   color_blend_state_create_info.attachmentCount = 1;
-  color_blend_state_create_info.pAttachments = &pipeline_state_create_info_.color_blend_attachment;
+  color_blend_state_create_info.pAttachments = &pipeline_cfg.color_blend_attachment;
   color_blend_state_create_info.blendConstants[0] = 0.0F;
   color_blend_state_create_info.blendConstants[1] = 0.0F;
   color_blend_state_create_info.blendConstants[2] = 0.0F;
@@ -91,15 +89,15 @@ void Pipeline::create_pipeline(uint32_t width, uint32_t height,
   graphics_pipeline_create_info.pStages = shader_stage_create_info;
   graphics_pipeline_create_info.pVertexInputState = &vertex_input_state_create_info;
   graphics_pipeline_create_info.pViewportState = &viewport_state_create_info;
-  graphics_pipeline_create_info.pInputAssemblyState = &pipeline_state_create_info_.input_assembly;
-  graphics_pipeline_create_info.pRasterizationState = &pipeline_state_create_info_.rasterization;
-  graphics_pipeline_create_info.pMultisampleState = &pipeline_state_create_info_.multisample;
+  graphics_pipeline_create_info.pInputAssemblyState = &pipeline_cfg.input_assembly;
+  graphics_pipeline_create_info.pRasterizationState = &pipeline_cfg.rasterization;
+  graphics_pipeline_create_info.pMultisampleState = &pipeline_cfg.multisample;
   graphics_pipeline_create_info.pColorBlendState = &color_blend_state_create_info;
-  graphics_pipeline_create_info.pDepthStencilState = &pipeline_state_create_info_.depth_stencil;
+  graphics_pipeline_create_info.pDepthStencilState = &pipeline_cfg.depth_stencil;
   graphics_pipeline_create_info.pDynamicState = nullptr;
-  graphics_pipeline_create_info.layout = pipeline_state_create_info_.layout;
-  graphics_pipeline_create_info.renderPass = pipeline_state_create_info_.render_pass;
-  graphics_pipeline_create_info.subpass = pipeline_state_create_info_.subpass;
+  graphics_pipeline_create_info.layout = pipeline_cfg.layout;
+  graphics_pipeline_create_info.renderPass = pipeline_cfg.render_pass;
+  graphics_pipeline_create_info.subpass = pipeline_cfg.subpass;
   graphics_pipeline_create_info.basePipelineIndex = -1;
   graphics_pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE;
 
@@ -109,66 +107,71 @@ void Pipeline::create_pipeline(uint32_t width, uint32_t height,
   }
 }
 
-void Pipeline::init_default_config(uint32_t width, uint32_t height) {
-  pipeline_state_create_info_.viewport.x = 0.0F;
-  pipeline_state_create_info_.viewport.y = 0.0F;
-  pipeline_state_create_info_.viewport.width = static_cast<float>(width);
-  pipeline_state_create_info_.viewport.height = static_cast<float>(height);
-  pipeline_state_create_info_.viewport.minDepth = 0.0F;
-  pipeline_state_create_info_.viewport.maxDepth = 1.0F;
+Pipeline::VkPipelineStateCreateInfo Pipeline::create_default_config(uint32_t width,
+                                                                    uint32_t height) {
+  VkPipelineStateCreateInfo pipeline_state_create_info{};
 
-  pipeline_state_create_info_.scissor.offset = {0, 0};
-  pipeline_state_create_info_.scissor.extent = {width, height};
+  pipeline_state_create_info.viewport.x = 0.0F;
+  pipeline_state_create_info.viewport.y = 0.0F;
+  pipeline_state_create_info.viewport.width = static_cast<float>(width);
+  pipeline_state_create_info.viewport.height = static_cast<float>(height);
+  pipeline_state_create_info.viewport.minDepth = 0.0F;
+  pipeline_state_create_info.viewport.maxDepth = 1.0F;
 
-  pipeline_state_create_info_.input_assembly.sType =
+  pipeline_state_create_info.scissor.offset = {0, 0};
+  pipeline_state_create_info.scissor.extent = {width, height};
+
+  pipeline_state_create_info.input_assembly.sType =
       VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-  pipeline_state_create_info_.input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-  pipeline_state_create_info_.input_assembly.primitiveRestartEnable = VK_FALSE;
+  pipeline_state_create_info.input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  pipeline_state_create_info.input_assembly.primitiveRestartEnable = VK_FALSE;
 
-  pipeline_state_create_info_.rasterization.sType =
+  pipeline_state_create_info.rasterization.sType =
       VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-  pipeline_state_create_info_.rasterization.depthClampEnable = VK_FALSE;
-  pipeline_state_create_info_.rasterization.rasterizerDiscardEnable = VK_FALSE;
-  pipeline_state_create_info_.rasterization.polygonMode = VK_POLYGON_MODE_FILL;
-  pipeline_state_create_info_.rasterization.lineWidth = 1.0F;
-  pipeline_state_create_info_.rasterization.cullMode = VK_CULL_MODE_NONE;
-  pipeline_state_create_info_.rasterization.frontFace = VK_FRONT_FACE_CLOCKWISE;
-  pipeline_state_create_info_.rasterization.depthBiasEnable = VK_FALSE;
-  pipeline_state_create_info_.rasterization.depthBiasConstantFactor = 0.0F;
-  pipeline_state_create_info_.rasterization.depthBiasClamp = 0.0F;
-  pipeline_state_create_info_.rasterization.depthBiasSlopeFactor = 0.0F;
+  pipeline_state_create_info.rasterization.depthClampEnable = VK_FALSE;
+  pipeline_state_create_info.rasterization.rasterizerDiscardEnable = VK_FALSE;
+  pipeline_state_create_info.rasterization.polygonMode = VK_POLYGON_MODE_FILL;
+  pipeline_state_create_info.rasterization.lineWidth = 1.0F;
+  pipeline_state_create_info.rasterization.cullMode = VK_CULL_MODE_NONE;
+  pipeline_state_create_info.rasterization.frontFace = VK_FRONT_FACE_CLOCKWISE;
+  pipeline_state_create_info.rasterization.depthBiasEnable = VK_FALSE;
+  pipeline_state_create_info.rasterization.depthBiasConstantFactor = 0.0F;
+  pipeline_state_create_info.rasterization.depthBiasClamp = 0.0F;
+  pipeline_state_create_info.rasterization.depthBiasSlopeFactor = 0.0F;
 
-  pipeline_state_create_info_.multisample.sType =
+  pipeline_state_create_info.multisample.sType =
       VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-  pipeline_state_create_info_.multisample.sampleShadingEnable = VK_FALSE;
-  pipeline_state_create_info_.multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-  pipeline_state_create_info_.multisample.minSampleShading = 1.0F;
-  pipeline_state_create_info_.multisample.pSampleMask = nullptr;
-  pipeline_state_create_info_.multisample.alphaToCoverageEnable = VK_FALSE;
-  pipeline_state_create_info_.multisample.alphaToOneEnable = VK_FALSE;
+  pipeline_state_create_info.multisample.sampleShadingEnable = VK_FALSE;
+  pipeline_state_create_info.multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+  pipeline_state_create_info.multisample.minSampleShading = 1.0F;
+  pipeline_state_create_info.multisample.pSampleMask = nullptr;
+  pipeline_state_create_info.multisample.alphaToCoverageEnable = VK_FALSE;
+  pipeline_state_create_info.multisample.alphaToOneEnable = VK_FALSE;
 
-  pipeline_state_create_info_.color_blend_attachment.colorWriteMask =
+  pipeline_state_create_info.color_blend_attachment.colorWriteMask =
       VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
       VK_COLOR_COMPONENT_A_BIT;
-  pipeline_state_create_info_.color_blend_attachment.blendEnable = VK_FALSE;
-  pipeline_state_create_info_.color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-  pipeline_state_create_info_.color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-  pipeline_state_create_info_.color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-  pipeline_state_create_info_.color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-  pipeline_state_create_info_.color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-  pipeline_state_create_info_.color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+  pipeline_state_create_info.color_blend_attachment.blendEnable = VK_FALSE;
+  pipeline_state_create_info.color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+  pipeline_state_create_info.color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+  pipeline_state_create_info.color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+  pipeline_state_create_info.color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+  pipeline_state_create_info.color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+  pipeline_state_create_info.color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
-  pipeline_state_create_info_.depth_stencil.sType =
+  pipeline_state_create_info.depth_stencil.sType =
       VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-  pipeline_state_create_info_.depth_stencil.depthTestEnable = VK_TRUE;
-  pipeline_state_create_info_.depth_stencil.depthWriteEnable = VK_TRUE;
-  pipeline_state_create_info_.depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
-  pipeline_state_create_info_.depth_stencil.depthBoundsTestEnable = VK_FALSE;
-  pipeline_state_create_info_.depth_stencil.minDepthBounds = 0.0F;
-  pipeline_state_create_info_.depth_stencil.maxDepthBounds = 1.0F;
-  pipeline_state_create_info_.depth_stencil.stencilTestEnable = VK_FALSE;
-  pipeline_state_create_info_.depth_stencil.front = {};
-  pipeline_state_create_info_.depth_stencil.back = {};
+  pipeline_state_create_info.depth_stencil.depthTestEnable = VK_TRUE;
+  pipeline_state_create_info.depth_stencil.depthWriteEnable = VK_TRUE;
+  pipeline_state_create_info.depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
+  pipeline_state_create_info.depth_stencil.depthBoundsTestEnable = VK_FALSE;
+  pipeline_state_create_info.depth_stencil.minDepthBounds = 0.0F;
+  pipeline_state_create_info.depth_stencil.maxDepthBounds = 1.0F;
+  pipeline_state_create_info.depth_stencil.stencilTestEnable = VK_FALSE;
+  pipeline_state_create_info.depth_stencil.front = {};
+  pipeline_state_create_info.depth_stencil.back = {};
+
+  return pipeline_state_create_info;
 }
 
 void Pipeline::create_shader_module(const std::vector<char>& code,

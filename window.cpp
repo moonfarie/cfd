@@ -1,6 +1,7 @@
 #include "window.hpp"
 
 #include <cassert>
+#include <cstdint>
 #include <stdexcept>
 
 namespace engine {
@@ -29,6 +30,10 @@ void Window::create_surface(VkInstance instance, VkSurfaceKHR* surface) const {
   if (glfwCreateWindowSurface(instance, window_, nullptr, surface) != VK_SUCCESS) {
     throw std::runtime_error("Failed to create GLFW window surface");
   }
+}
+
+VkExtent2D Window::extent() const {
+  return {static_cast<uint32_t>(width_), static_cast<uint32_t>(height_)};
 }
 
 void Window::init() {
